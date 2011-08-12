@@ -8,8 +8,8 @@ Gem::Specification.new do |s|
   s.authors     = ["Colin Gemmell"]
   s.email       = ["pythonandchips@gmail.com"]
   s.homepage    = ""
-  s.summary     = %q{TODO: Write a gem summary}
-  s.description = %q{TODO: Write a gem description}
+  s.summary     = %q{Workflow extensions for the state machine gem}
+  s.description = %q{Workflow extensions for the state machine gem}
 
   s.rubyforge_project = "state_machine_workflow"
 

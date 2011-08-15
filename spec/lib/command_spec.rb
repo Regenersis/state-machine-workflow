@@ -149,13 +149,32 @@ describe StateMachineWorkflow::Command do
         self.bar = params[:bar]
         self.qux = params[:qux]
       end
+
+      def update_attributes params
+        self.bar = params[:bar]
+        self.qux = params[:qux]
+        true
+      end
     end
 
     class Bar
-      attr_accessor :result
+      attr_accessor :result, :update_result, :deleted
       def build params
         @result = params
       end
+
+      def update params
+        @update_result = params
+      end
+      def delete
+        @deleted = true
+      end
+    end
+
+    class Qux
+    end
+
+    class Quux
     end
 
     class AssociationTest
@@ -178,6 +197,10 @@ describe StateMachineWorkflow::Command do
         end
       end
 
+      def previous_state
+        "foo"
+      end
+
       def self.validates_associated klass
         @@validated_associated ||= []
         @@validated_associated << klass
@@ -189,6 +212,13 @@ describe StateMachineWorkflow::Command do
         end
         command :record_bar do
           transition :bar => :qux
+        end
+
+        command :record_qux do
+          transition :qux => :quux
+        end
+        command :invoke_quux do
+          transition :quux => :corge
         end
       end
     end
@@ -202,7 +232,7 @@ describe StateMachineWorkflow::Command do
     end
 
     it "should set the validates associated klass" do
-      AssociationTest.validated_associated.should eql [:foo, :bar]
+      AssociationTest.validated_associated.should eql [:foo, :bar, :qux, :quux]
     end
 
     context "when transitioning state with new object" do
@@ -213,6 +243,7 @@ describe StateMachineWorkflow::Command do
         klass_instance = Foo.new(@params)
         @association_test.record_foo(klass_instance)
         @association_test.foo.should eql klass_instance
+        @association_test.state.should eql "bar"
       end
 
       it "should create a new object to param is hash" do
@@ -225,6 +256,54 @@ describe StateMachineWorkflow::Command do
         @association_test.state = "bar"
         @association_test.record_bar(@params)
         @association_test.bar.result.should eql @params
+      end
+    end
+    context "when transitioning state when updating an object" do
+      before do
+        @params = {:bar => "quux", :qux => "corge"}
+        @update_params = {:bar => "grault", :qux => "graply"}
+      end
+
+      it "should set the association value when transitioning" do
+        @association_test.foo = Foo.new(@params)
+        @association_test.update_foo(@update_params)
+        @association_test.state.should eql "bar"
+      end
+
+      it "should create a new object to param is hash" do
+        @association_test.foo = Foo.new(@params)
+        @association_test.update_foo(@update_params)
+        @association_test.foo.bar.should eql @update_params[:bar]
+        @association_test.foo.qux.should eql @update_params[:qux]
+      end
+
+      it "activate the update method if one exists on the instance" do
+        @association_test.bar = Bar.new(@params)
+        @association_test.state = "bar"
+        @association_test.update_bar(@update_params)
+        @association_test.bar.update_result.should eql @update_params
+      end
+    end
+
+    context "when using an auto command the command" do
+      it "activate the update method if one exists on the instance" do
+        @params = {:bar => "quux", :qux => "corge"}
+        @association_test.state = "qux"
+        @association_test.record_qux(@params)
+        @association_test.state.should eql "corge"
+      end
+    end
+
+    context "when rewinding the command" do
+      it "activate the update method if one exists on the instance" do
+        @params = {:bar => "quux", :qux => "corge"}
+        @update_params = {:bar => "grault", :qux => "graply"}
+        @association_test.foo = Foo.new(@params)
+        @association_test.bar = Bar.new(@params)
+        @association_test.state = "bar"
+        @association_test.rewind_record_bar
+        @association_test.bar.deleted.should be_true
+        @association_test.state.should eql "foo"
       end
     end
   end

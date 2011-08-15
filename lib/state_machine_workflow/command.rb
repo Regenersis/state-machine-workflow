@@ -5,16 +5,26 @@ module StateMachineWorkflow
       event(name, &block)
       if name.to_s.start_with?("record")
         update_name = create_update_event(name, &block)
+      end
+      if name.to_s.start_with?("record") || name.to_s.start_with?("invoke")
         add_association_to_class(owner_class, name)
       end
 
       owner_class.instance_eval do
         define_method name do |*args|
           self.class.transaction do
-            if self.respond_to?('execute_' + name.to_s)
+            if name.to_s.index('rewind')
+              if self.respond_to?('execute_' + name.to_s)
+                result = self.send('execute_' + name.to_s, *args) && super()
+              else
+                klass_name = name.to_s.gsub("rewind_record_", "")
+                result = self.send(klass_name).delete if !self.send(klass_name).nil?
+                result = result && super()
+              end
+            elsif self.respond_to?('execute_' + name.to_s)
               result = self.send('execute_' + name.to_s, *args) && super()
             else
-              klass_name = name.to_s.gsub("record_", "")
+              klass_name = name.to_s.gsub("invoke_", "").gsub("record_", "")
               if args[0].class == Hash
                 klass = Object.const_get(klass_name.classify)
                 instance = klass.new(*args)
@@ -23,6 +33,9 @@ module StateMachineWorkflow
                 instance = args[0]
               end
               result = self.send("#{klass_name}=", instance) && super()
+            end
+            if name == "invoke_quux"
+              raise Exception
             end
             auto_invoke_command = name.to_s.index('rewind') == 0 ?  "invoke_previous" : "invoke_next"
             raise ::ActiveRecord::Rollback unless result && self.send(auto_invoke_command, *args)
@@ -33,7 +46,19 @@ module StateMachineWorkflow
         unless update_name.nil?
           define_method update_name do |*args|
             self.class.transaction do
-              result = self.send('execute_' + update_name.to_s, *args) && super()
+              if self.respond_to?('execute_' + update_name.to_s)
+                result = self.send('execute_' + update_name.to_s, *args) && super()
+              else
+                if args[0].class == Hash
+                  klass_name = update_name.to_s.gsub("update_", "")
+                  property = self.send("#{klass_name}")
+                  if property.respond_to?(:update)
+                    result = property.update(*args) && super()
+                  else
+                    result = property.update_attributes(*args) && super()
+                  end
+                end
+              end
               auto_invoke_command = update_name.to_s.index('rewind') == 0 ?  "invoke_previous" : "invoke_next"
               raise ::ActiveRecord::Rollback unless result && self.send(auto_invoke_command, *args)
               result
@@ -43,7 +68,8 @@ module StateMachineWorkflow
 
         define_method "invoke_next" do |*args|
           if(self.respond_to?("invoke_" + self.state.to_s))
-            return self.send("invoke_" + self.state.to_s, *args)
+            result = self.send("invoke_" + self.state.to_s, *args)
+            return result
           end
           true
         end
@@ -75,11 +101,10 @@ module StateMachineWorkflow
 
     def add_association_to_class(owner_class, name)
       owner_class.class_eval do
-        klass_name = name.to_s.gsub("record_", "").to_sym
+        klass_name = name.to_s.gsub("invoke_", "").gsub("record_", "").to_sym
         has_one klass_name if self.respond_to?(:has_one)
         validates_associated klass_name if self.respond_to?(:validates_associated)
       end
     end
-
   end
 end

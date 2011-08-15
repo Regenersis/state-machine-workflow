@@ -1,6 +1,5 @@
 require 'spec_helper'
 
-
 class CommandExtension
 
   def self.transaction
@@ -139,6 +138,93 @@ describe StateMachineWorkflow::Command do
         lambda {
             result = @machine.update_action('arg1', 'arg2', 'arg3')
         }.should raise_error(ActiveRecord::Rollback)
+      end
+    end
+  end
+
+  describe "create associations" do
+    class Foo
+      attr_accessor :bar, :qux
+      def initialize(params)
+        self.bar = params[:bar]
+        self.qux = params[:qux]
+      end
+    end
+
+    class Bar
+      attr_accessor :result
+      def build params
+        @result = params
+      end
+    end
+
+    class AssociationTest
+
+      def self.transaction
+        yield
+      end
+
+      def self.validated_associated
+        return @@validated_associated
+      end
+      def self.has_one klass_name
+        self.instance_eval do
+          define_method klass_name do |*args|
+            self.instance_variable_get(:"@#{klass_name}")
+          end
+          define_method "#{klass_name}=" do |*args|
+            self.instance_variable_set(:"@#{klass_name}", *args)
+          end
+        end
+      end
+
+      def self.validates_associated klass
+        @@validated_associated ||= []
+        @@validated_associated << klass
+      end
+
+      state_machine :state, :initial => :foo do
+        command :record_foo do
+          transition :foo => :bar
+        end
+        command :record_bar do
+          transition :bar => :qux
+        end
+      end
+    end
+
+    before do
+      @association_test = AssociationTest.new
+    end
+
+    it "should add an method called foo" do
+      @association_test.should respond_to :foo
+    end
+
+    it "should set the validates associated klass" do
+      AssociationTest.validated_associated.should eql [:foo, :bar]
+    end
+
+    context "when transitioning state with new object" do
+      before do
+        @params = {:bar => "quux", :qux => "corge"}
+      end
+      it "should set the association value when transitioning" do
+        klass_instance = Foo.new(@params)
+        @association_test.record_foo(klass_instance)
+        @association_test.foo.should eql klass_instance
+      end
+
+      it "should create a new object to param is hash" do
+        @association_test.record_foo(@params)
+        @association_test.foo.bar.should eql @params[:bar]
+        @association_test.foo.qux.should eql @params[:qux]
+      end
+
+      it "activate the build method if one exists on the instance" do
+        @association_test.state = "bar"
+        @association_test.record_bar(@params)
+        @association_test.bar.result.should eql @params
       end
     end
   end

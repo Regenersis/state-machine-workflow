@@ -1,15 +1,29 @@
 module StateMachineWorkflow
   module Command
+
     def command(name, *options, &block)
       event(name, &block)
       if name.to_s.start_with?("record")
-        update_name = name.to_s.gsub(/^record/, "update").to_sym
-        event(update_name, &block)
+        update_name = create_update_event(name, &block)
+        add_association_to_class(owner_class, name)
       end
+
       owner_class.instance_eval do
         define_method name do |*args|
           self.class.transaction do
-            result = self.send('execute_' + name.to_s, *args) && super()
+            if self.respond_to?('execute_' + name.to_s)
+              result = self.send('execute_' + name.to_s, *args) && super()
+            else
+              klass_name = name.to_s.gsub("record_", "")
+              if args[0].class == Hash
+                klass = Object.const_get(klass_name.classify)
+                instance = klass.new(*args)
+                instance.build(*args) if instance.respond_to?(:build)
+              else
+                instance = args[0]
+              end
+              result = self.send("#{klass_name}=", instance) && super()
+            end
             auto_invoke_command = name.to_s.index('rewind') == 0 ?  "invoke_previous" : "invoke_next"
             raise ::ActiveRecord::Rollback unless result && self.send(auto_invoke_command, *args)
             result
@@ -50,5 +64,22 @@ module StateMachineWorkflow
     def auto_command(name, *options, &block)
       command(name, *options, &block)
     end
+
+    private
+
+    def create_update_event(name, &block)
+      update_name = name.to_s.gsub(/^record/, "update").to_sym
+      event(update_name, &block)
+      update_name
+    end
+
+    def add_association_to_class(owner_class, name)
+      owner_class.class_eval do
+        klass_name = name.to_s.gsub("record_", "").to_sym
+        has_one klass_name if self.respond_to?(:has_one)
+        validates_associated klass_name if self.respond_to?(:validates_associated)
+      end
+    end
+
   end
 end

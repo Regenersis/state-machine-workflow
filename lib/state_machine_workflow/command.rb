@@ -34,9 +34,6 @@ module StateMachineWorkflow
               end
               result = self.send("#{klass_name}=", instance) && super()
             end
-            if name == "invoke_quux"
-              raise Exception
-            end
             auto_invoke_command = name.to_s.index('rewind') == 0 ?  "invoke_previous" : "invoke_next"
             raise ::ActiveRecord::Rollback unless result && self.send(auto_invoke_command, *args)
             result

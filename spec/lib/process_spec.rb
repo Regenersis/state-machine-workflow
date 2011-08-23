@@ -104,24 +104,24 @@ describe Process do
   end
 
   describe "convention based" do
-    class Bar
+    class Grault
     end
 
-    class Baar
+    class Garply
       attr_accessor :line
       def finish(line)
         @line = line
       end
     end
 
-    class Qux
+    class Waldo
       attr_accessor :line
       def start(line)
         @line = line
       end
     end
 
-    class Foo
+    class Corge
       def self.has_one klass_name, params={}
         self.instance_eval do
           define_method klass_name do |*args|
@@ -133,59 +133,59 @@ describe Process do
         end
       end
 
-      state_machine :state, :initial => :bar do
-        process :bar do
-          followed_by :baar
+      state_machine :state, :initial => :grault do
+        process :grault do
+          followed_by :garply
         end
 
-        process :baar do
-          followed_by :qux
+        process :garply do
+          followed_by :waldo
         end
-        process :qux do
+        process :waldo do
         end
       end
 
     end
 
     it "should add a method for bar" do
-      foo = Foo.new
-      foo.should respond_to :bar
+      foo = Corge.new
+      foo.should respond_to :grault
     end
     context "when transitioning to next state" do
       context "with not start command defined" do
         before do
-          @foo = Foo.new
-          @foo.finish_bar
+          @foo = Corge.new
+          @foo.finish_grault
         end
         it "should create new object and assign to parent" do
-          @foo.baar.should_not be_nil
+          @foo.garply.should_not be_nil
         end
         it "should creat type based on state" do
-          @foo.baar.class.should eql Baar
+          @foo.garply.class.should eql Garply
         end
       end
       context "with a start command defined" do
         before do
-          @foo = Foo.new
-          @foo.state = "baar"
-          @foo.finish_baar
+          @foo = Corge.new
+          @foo.state = "garply"
+          @foo.finish_garply
         end
         it "should create new object" do
-          @foo.qux.should_not be_nil
+          @foo.waldo.should_not be_nil
         end
         it "should pass the line as paramter" do
-          @foo.qux.line.should eql @foo
+          @foo.waldo.line.should eql @foo
         end
       end
       context "with a finish command defined" do
         before do
-          @foo = Foo.new
-          @foo.baar = Baar.new
-          @foo.state = "baar"
-          @foo.finish_baar
+          @foo = Corge.new
+          @foo.garply = Garply.new
+          @foo.state = "garply"
+          @foo.finish_garply
         end
         it "should pass the line as paramter" do
-          @foo.baar.line.should eql @foo
+          @foo.garply.line.should eql @foo
         end
       end
     end

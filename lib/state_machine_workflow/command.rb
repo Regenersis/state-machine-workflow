@@ -99,7 +99,7 @@ module StateMachineWorkflow
     def add_association_to_class(owner_class, name)
       owner_class.class_eval do
         klass_name = name.to_s.gsub("invoke_", "").gsub("record_", "").to_sym
-        has_one klass_name if self.respond_to?(:has_one)
+        has_one klass_name, :as => :station if self.respond_to?(:has_one)
         validates_associated klass_name if self.respond_to?(:validates_associated)
       end
     end

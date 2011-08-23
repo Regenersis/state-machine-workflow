@@ -186,7 +186,7 @@ describe StateMachineWorkflow::Command do
       def self.validated_associated
         return @@validated_associated
       end
-      def self.has_one klass_name
+      def self.has_one klass_name, params
         self.instance_eval do
           define_method klass_name do |*args|
             self.instance_variable_get(:"@#{klass_name}")

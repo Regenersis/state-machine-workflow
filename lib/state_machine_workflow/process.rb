@@ -4,7 +4,7 @@ module StateMachineWorkflow
       command_name = ('finish_' + process_name.to_s).to_sym
 
       owner_class.class_eval do
-        has_one process_name if self.respond_to?(:has_one)
+        has_one process_name, :as => :line if self.respond_to?(:has_one)
       end
 
       event(command_name, &block)

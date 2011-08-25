@@ -5,7 +5,7 @@ class CommandExtension
   def self.transaction
     yield
   end
-
+  
   state_machine :state, :initial => :init do
     command :command do
       transition :init => :completed
@@ -183,9 +183,19 @@ describe StateMachineWorkflow::Command do
         yield
       end
 
+      def self.reflect_on_association param
+        @@attributes ||= []
+        @@attributes.detect{|attribute| attribute == param}
+      end
+
+      def self.attributes
+        @@attributes
+      end
+
       def self.validated_associated
         return @@validated_associated
       end
+
       def self.has_one klass_name, params
         self.instance_eval do
           define_method klass_name do |*args|
@@ -195,6 +205,8 @@ describe StateMachineWorkflow::Command do
             self.instance_variable_set(:"@#{klass_name}", *args)
           end
         end
+        @@attributes ||= []
+        @@attributes << klass_name
       end
 
       def previous_state
@@ -220,6 +232,9 @@ describe StateMachineWorkflow::Command do
         command :invoke_quux do
           transition :quux => :corge
         end
+        command :record_alias_command, :class => :qux do
+          transition :alias_command => :zxzzy
+        end
       end
     end
 
@@ -229,6 +244,10 @@ describe StateMachineWorkflow::Command do
 
     it "should add an method called foo" do
       @association_test.should respond_to :foo
+    end
+
+    it "should add all attributes" do
+      AssociationTest.attributes.should eql [:foo, :bar, :qux, :quux]
     end
 
     it "should set the validates associated klass" do
@@ -304,6 +323,42 @@ describe StateMachineWorkflow::Command do
         @association_test.rewind_record_bar
         @association_test.bar.deleted.should be_true
         @association_test.state.should eql "foo"
+      end
+    end
+    context "when executing an alias command" do
+      it "should set the alias class" do
+        @params = {:bar => "quux", :qux => "corge"}
+        klass_instance = Qux.new(@params)
+        @association_test.state = "alias_command"
+        @association_test.record_alias_command(klass_instance)
+        @association_test.qux.should eql klass_instance
+        @association_test.state.should eql "zxzzy"
+      end
+    end
+  end
+
+  context "parse options" do
+    context "when options are empty" do
+      class TestClass
+        include StateMachineWorkflow::Command
+      end
+
+      it "should pass back a hash with the correct class name with record command" do
+        TestClass.new.parse_options("record_command").should eql({:class => :command, :command_name => "record_command"})
+      end
+      it "should pass back a hash with the correct class name with record invoke" do
+        TestClass.new.parse_options("invoke_command").should eql({:class => :command, :command_name => "invoke_command"})
+      end
+      it "should pass back a hash with the correct class name with record rewind command" do
+        TestClass.new.parse_options("rewind_record_command").should eql({:class => :command, :command_name => "rewind_record_command"})
+      end
+      it "should pass back a hash with the correct class name with invoke rewind command" do
+        TestClass.new.parse_options("rewind_invoke_command").should eql({:class => :command, :command_name => "rewind_invoke_command"})
+      end
+    end
+    context "when the option contains a class" do
+      it "should pass back a hash with the correct class name provided" do
+        TestClass.new.parse_options("record_my_same_command", [{:class => :command}]).should eql({:class => :command, :command_name => "record_my_same_command"})
       end
     end
   end

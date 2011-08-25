@@ -2,12 +2,13 @@ module StateMachineWorkflow
   module Command
 
     def command(name, *options, &block)
+      opts = parse_options(name, options)
       event(name, &block)
       if name.to_s.start_with?("record")
         update_name = create_update_event(name, &block)
       end
       if name.to_s.start_with?("record") || name.to_s.start_with?("invoke")
-        add_association_to_class(owner_class, name)
+        add_association_to_class(owner_class, opts[:class])
       end
 
       owner_class.instance_eval do
@@ -17,16 +18,16 @@ module StateMachineWorkflow
               if self.respond_to?('execute_' + name.to_s)
                 result = self.send('execute_' + name.to_s, *args) && super()
               else
-                klass_name = name.to_s.gsub("rewind_record_", "")
+                klass_name = opts[:class]
                 result = self.send(klass_name).delete if !self.send(klass_name).nil?
                 result = result && super()
               end
             elsif self.respond_to?('execute_' + name.to_s)
               result = self.send('execute_' + name.to_s, *args) && super()
             else
-              klass_name = name.to_s.gsub("invoke_", "").gsub("record_", "")
+              klass_name = opts[:class]
               if args[0].class == Hash
-                klass = Object.const_get(klass_name.classify)
+                klass = Object.const_get(klass_name.to_s.classify)
                 instance = klass.new(*args)
                 instance.build(*args) if instance.respond_to?(:build)
               else
@@ -47,7 +48,7 @@ module StateMachineWorkflow
                 result = self.send('execute_' + update_name.to_s, *args) && super()
               else
                 if args[0].class == Hash
-                  klass_name = update_name.to_s.gsub("update_", "")
+                  klass_name = opts[:class]
                   property = self.send("#{klass_name}")
                   if property.respond_to?(:update)
                     result = property.update(*args) && super()
@@ -88,6 +89,15 @@ module StateMachineWorkflow
       command(name, *options, &block)
     end
 
+    def parse_options name, *options
+      klass_name = name.to_s.gsub("invoke_", "").gsub("record_", "").gsub("rewind_", "")
+      opts = {:class => klass_name.to_sym, :command_name => name}
+      if !options[0].nil? && options[0][0].class == Hash
+        opts = opts.merge(options[0][0])
+      end
+      return opts
+    end
+
     private
 
     def create_update_event(name, &block)
@@ -97,10 +107,11 @@ module StateMachineWorkflow
     end
 
     def add_association_to_class(owner_class, name)
-      owner_class.class_eval do
-        klass_name = name.to_s.gsub("invoke_", "").gsub("record_", "").to_sym
-        has_one klass_name, :as => :station if self.respond_to?(:has_one)
-        validates_associated klass_name if self.respond_to?(:validates_associated)
+      if owner_class.respond_to?(:reflect_on_association) && owner_class.reflect_on_association(name).nil?
+        owner_class.class_eval do
+          has_one name, :as => :station if self.respond_to?(:has_one)
+          validates_associated name if self.respond_to?(:validates_associated)
+        end
       end
     end
   end

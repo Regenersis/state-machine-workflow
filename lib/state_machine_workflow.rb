@@ -1,5 +1,6 @@
 require "active_record"
 require "state_machine"
+require "history"
 Dir.glob(File.join(File.dirname(__FILE__), "state_machine_workflow/**/*.rb")).each{|file| require file}
 
 module StateMachineWorkflow

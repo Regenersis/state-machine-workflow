@@ -77,7 +77,7 @@ module StateMachineWorkflow
       end
 
       if name.to_s.start_with?("record") || name.to_s.start_with?("invoke")
-        rewind_command(name, *options)
+        rewind_command(name, options)
       end
     end
 

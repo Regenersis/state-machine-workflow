@@ -55,7 +55,7 @@ describe StateMachineWorkflow::RewindCommand do
         transition :bar => :baar
       end
 
-      command :record_baar do
+      command :record_baar, :class => :hazar do
         transition :baar => :qux, :if => lambda{|klass| klass.to_qux }
         transition :baar => :quux
       end
@@ -63,6 +63,12 @@ describe StateMachineWorkflow::RewindCommand do
       command :record_qux do
         transition :qux => :corge
       end
+    end
+  end
+  class Hazar
+    attr_accessor :deleted
+    def delete
+      @deleted = true
     end
   end
   
@@ -111,6 +117,14 @@ describe StateMachineWorkflow::RewindCommand do
       foo.histories = [HistoryStub.new({:state => "bar"}), HistoryStub.new({:state => "baar"}), HistoryStub.new({:state => "qux"})]
       foo.rewind_record_qux
       foo.qux.deleted.should be_true
+    end
+    it "should delete the accosiated class if it exists and is aliased" do
+      foo = Xyzzy.new
+      foo.state = :baar
+      foo.hazar = Hazar.new
+      foo.histories = [HistoryStub.new({:state => "bar"}), HistoryStub.new({:state => "baar"})]
+      foo.rewind_record_baar
+      foo.hazar.deleted.should be_true
     end
   end
 

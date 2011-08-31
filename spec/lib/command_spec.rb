@@ -180,10 +180,6 @@ describe StateMachineWorkflow::Command do
     class AssociationTest
       attr_accessor :histories
 
-      def initialize(*args, &block)
-        @histories = ["foo"]
-        super(*args, &block)
-      end
 
       def self.transaction
         yield
@@ -245,6 +241,8 @@ describe StateMachineWorkflow::Command do
     end
 
     before do
+      @history = []
+      History.stub(:create){|*args| @history << args[0][:state]  }
       @association_test = AssociationTest.new
     end
 
@@ -286,7 +284,7 @@ describe StateMachineWorkflow::Command do
       it "should record its history" do
         klass_instance = Foo.new(@params)
         @association_test.record_foo(klass_instance)
-        @association_test.histories.should eql ["foo", "bar"]
+        @history.should eql ["bar"]
       end
     end
 
@@ -326,18 +324,6 @@ describe StateMachineWorkflow::Command do
       end
     end
 
-    context "when rewinding the command" do
-      it "activate the update method if one exists on the instance" do
-        @params = {:bar => "quux", :qux => "corge"}
-        @update_params = {:bar => "grault", :qux => "graply"}
-        @association_test.foo = Foo.new(@params)
-        @association_test.bar = Bar.new(@params)
-        @association_test.state = "bar"
-        @association_test.rewind_record_bar
-        @association_test.bar.deleted.should be_true
-        @association_test.state.should eql "foo"
-      end
-    end
     context "when executing an alias command" do
       it "should set the alias class" do
         @params = {:bar => "quux", :qux => "corge"}

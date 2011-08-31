@@ -2,7 +2,7 @@ require 'spec_helper'
 
 describe StateMachineWorkflow::RewindCommand do
 
-  class Foo
+  class Xyzzy
 
     attr_accessor :state, :histories
 
@@ -73,32 +73,42 @@ describe StateMachineWorkflow::RewindCommand do
     end
   end
 
+  class HistoryStub
+    attr_accessor :state
+    def initialize state_hash
+      @state = state_hash[:state]
+    end
+
+    def delete
+    end
+  end
+
   context "when rewinding a class" do
     it "should create a rewind method for each command" do
-      foo = Foo.new
+      foo = Xyzzy.new
       foo.should respond_to(:rewind_record_bar)
     end
     it "should set the state to the previous state" do
-      foo = Foo.new
+      foo = Xyzzy.new
       foo.state = :qux
-      foo.histories = ["bar", "baar", "qux"]
+      foo.histories = [HistoryStub.new({:state => "bar"}), HistoryStub.new({:state => "baar"}), HistoryStub.new({:state => "qux"})]
       foo.rewind_record_qux
       foo.state.should eql "baar"
     end
 
     it "should not revert if it is not in the correct state" do
-      foo = Foo.new
+      foo = Xyzzy.new
       foo.state = :qux
-      foo.histories = ["bar", "baar", "qux"]
+      foo.histories = [HistoryStub.new({:state => "bar"}), HistoryStub.new({:state => "baar"}), HistoryStub.new({:state => "qux"})]
       foo.rewind_record_bar
       foo.state.should eql :qux
     end
 
     it "should delete the accosiated class if it exists" do
-      foo = Foo.new
+      foo = Xyzzy.new
       foo.state = :qux
       foo.qux = Qux.new
-      foo.histories = ["bar", "baar", "qux"]
+      foo.histories = [HistoryStub.new({:state => "bar"}), HistoryStub.new({:state => "baar"}), HistoryStub.new({:state => "qux"})]
       foo.rewind_record_qux
       foo.qux.deleted.should be_true
     end

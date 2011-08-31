@@ -14,15 +14,7 @@ module StateMachineWorkflow
       owner_class.instance_eval do
         define_method name do |*args|
           self.class.transaction do
-            if name.to_s.index('rewind')
-              if self.respond_to?('execute_' + name.to_s)
-                result = self.send('execute_' + name.to_s, *args) && super()
-              else
-                klass_name = opts[:class]
-                result = self.send(klass_name).delete if !self.send(klass_name).nil?
-                result = result && super()
-              end
-            elsif self.respond_to?('execute_' + name.to_s)
+            if self.respond_to?('execute_' + name.to_s)
               result = self.send('execute_' + name.to_s, *args) && super()
             else
               klass_name = opts[:class]
@@ -39,7 +31,7 @@ module StateMachineWorkflow
             raise ::ActiveRecord::Rollback unless result && self.send(auto_invoke_command, *args)
             if self.respond_to?(:histories)
               self.histories ||= []
-              self.histories << History.new(:state => self.state)
+              History.create(:state => self.state, :station => self)
             end
             result
           end

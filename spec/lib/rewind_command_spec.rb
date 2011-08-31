@@ -1,116 +1,107 @@
 require 'spec_helper'
 
-class RewindCommandExtension
-  def self.transaction
-    yield
-  end
+describe StateMachineWorkflow::RewindCommand do
 
-  def publish_event(command, context, *args)
-  end
+  class Foo
 
-  def reset_history
-    self.reset = true
-  end
+    attr_accessor :state, :histories
 
-   state_machine :state, :initial => :init do
-    command :command do
-      transition :init => :completed
+    def initialize(*args, &block)
+      @histories = ["bar"]
+      super(*args, &block)
     end
 
-    rewind_command :command do
-      transition :completed => :init
+    def self.transaction
+      yield
     end
 
-    rewind_command :pre_command do
-      transition :completed => :post_init
+    def self.reflect_on_association param
+      @@attributes ||= []
+      @@attributes.detect{|attribute| attribute == param}
     end
 
-    rewind_command :invoke_post_init do
-      transition :post_init => :init
-    end
-  end
-
-  attr_accessor :a1, :a2, :a3, :reset, :parent, :previous_state
-
-  def execute_rewind_command(arg1, arg2, arg3)
-    self.a1 = arg1
-    self.a2 = arg2
-    self.a3 = arg3
-  end
-
-  def execute_rewind_pre_command
-    self.a1 = "rewind_pre_command_executed"
-  end
-
-  def execute_rewind_invoke_post_init
-    self.a2 = "rewind_invoke_post_init_executed"
-  end
-
-end
-
-describe RewindCommandExtension do
-  context "rewind_command" do
-    before do
-      @machine = RewindCommandExtension.new
-      @machine.state = "completed"
-      @machine.rewind_command('arg1', 'arg2', 'arg3')
+    def self.attributes
+      @@attributes
     end
 
-    #should_have_event(:rewind_command)
-
-    it "call execute_command passing all arguments" do
-      [@machine.a1, @machine.a2, @machine.a3].should eql ['arg1', 'arg2', 'arg3']
+    def self.validated_associated
+      return @@validated_associated
     end
 
-    it "change state to init" do
-      @machine.state.should eql 'init'
-    end
-  end
-
-  context "rewind_command with no block given" do
-    class RewindCommandWithoutBlock
-      attr_accessor :destination_state, :previous_state
-
-      state_machine :state, :initial => :init do
-
-        command :start do
-          transition :init => :state1, :if => lambda {|machine| machine.destination_state == "state1"}
-          transition :init => :state2, :if => lambda {|machine| machine.destination_state == "state1"}
+    def self.has_one klass_name, params
+      self.instance_eval do
+        define_method klass_name do |*args|
+          self.instance_variable_get(:"@#{klass_name}")
         end
-
-        command :complete do
-          transition :state1 => :complete
-          transition :state2 => :complete
+        define_method "#{klass_name}=" do |*args|
+          self.instance_variable_set(:"@#{klass_name}", *args)
         end
-
-        rewind_command :complete
       end
+      @@attributes ||= []
+      @@attributes << klass_name
     end
 
-    before do
-      @machine = RewindCommandWithoutBlock.new
+    def previous_state
+      "foo"
     end
-    context "rewind_complete" do
-      it "transition to init if previous_state is init" do
-        @machine.state = "state2"
-        @machine.previous_state = "init"
-        @machine.rewind_complete_transition.to_name.should eql :init
+
+    def self.validates_associated klass
+      @@validated_associated ||= []
+      @@validated_associated << klass
+    end
+
+    state_machine :state, :initial => :bar do
+      command :record_bar do
+        transition :bar => :baar
+      end
+
+      command :record_baar do
+        transition :baar => :qux, :if => lambda{|klass| klass.to_qux }
+        transition :baar => :quux
+      end
+
+      command :record_qux do
+        transition :qux => :corge
       end
     end
   end
-
-  context "auto rewind if invoke defined" do
-    before do
-      @machine = RewindCommandExtension.new
-      @machine.state = "completed"
-      @machine.previous_state = "post_init"
-    end
-
-    it "execute task automatically if it is invoke" do
-      @machine.rewind_pre_command
-
-      @machine.a1.should eql "rewind_pre_command_executed"
-      @machine.a2.should eql "rewind_invoke_post_init_executed"
+  
+  class Qux
+    attr_accessor :deleted
+    def delete
+      @deleted = true
     end
   end
+
+  context "when rewinding a class" do
+    it "should create a rewind method for each command" do
+      foo = Foo.new
+      foo.should respond_to(:rewind_record_bar)
+    end
+    it "should set the state to the previous state" do
+      foo = Foo.new
+      foo.state = :qux
+      foo.histories = ["bar", "baar", "qux"]
+      foo.rewind_record_qux
+      foo.state.should eql "baar"
+    end
+
+    it "should not revert if it is not in the correct state" do
+      foo = Foo.new
+      foo.state = :qux
+      foo.histories = ["bar", "baar", "qux"]
+      foo.rewind_record_bar
+      foo.state.should eql :qux
+    end
+
+    it "should delete the accosiated class if it exists" do
+      foo = Foo.new
+      foo.state = :qux
+      foo.qux = Qux.new
+      foo.histories = ["bar", "baar", "qux"]
+      foo.rewind_record_qux
+      foo.qux.deleted.should be_true
+    end
+  end
+
 end

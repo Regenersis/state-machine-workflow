@@ -1,23 +1,33 @@
 module StateMachineWorkflow
   module RewindCommand
     def rewind_command(name, *options, &block)
-      rewind_command_name = ('rewind_' + name.to_s).to_sym
-      if block == nil
-        command(rewind_command_name, *options) do
-          original_command = self.machine.events.find {|e| e.name == name}
-          original_command.branches.each do |guard|
-            guard.state_requirements.each do |req|
-              req[:from].values.each do |from_state|
-                self.machine.states.each do |to_state|
-                  transition from_state => to_state.name, :if => lambda {|machine| machine.previous_state == to_state.name.to_s}
-                end
-              end
-            end
+      opts = parse_options(name, *options)
+      owner_class.instance_eval do |*args|
+        define_method opts[:command_name] do |*args|
+          current_state = self.histories.pop
+          state_for_transition = opts[:command_name].to_s.gsub("rewind_record_", "")
+          if current_state != state_for_transition
+            return false
           end
+          previous_state = self.histories.last
+          self.state = previous_state
+          result = self.send(opts[:class]).delete if !self.send(opts[:class]).nil?
+          if self.respond_to?(:save)
+            return self.save
+          end
+          return true
         end
-      else
-        command(rewind_command_name, *options, &block)
       end
+    end
+
+    def parse_options name, *options
+      klass_name = name.to_s.gsub("invoke_", "").gsub("record_", "").gsub("rewind_", "")
+      command_name = "rewind_#{name}"
+      opts = {:class => klass_name.to_sym, :command_name => command_name}
+      if !options[0].nil? && options[0][0].class == Hash
+        opts = opts.merge(options[0][0])
+      end
+      return opts
     end
   end
 end

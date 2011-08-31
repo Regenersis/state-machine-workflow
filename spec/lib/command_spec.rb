@@ -178,6 +178,12 @@ describe StateMachineWorkflow::Command do
     end
 
     class AssociationTest
+      attr_accessor :histories
+
+      def initialize(*args, &block)
+        @histories = ["foo"]
+        super(*args, &block)
+      end
 
       def self.transaction
         yield
@@ -276,7 +282,14 @@ describe StateMachineWorkflow::Command do
         @association_test.record_bar(@params)
         @association_test.bar.result.should eql @params
       end
+
+      it "should record its history" do
+        klass_instance = Foo.new(@params)
+        @association_test.record_foo(klass_instance)
+        @association_test.histories.should eql ["foo", "bar"]
+      end
     end
+
     context "when transitioning state when updating an object" do
       before do
         @params = {:bar => "quux", :qux => "corge"}

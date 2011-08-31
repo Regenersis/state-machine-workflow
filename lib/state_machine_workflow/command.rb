@@ -37,6 +37,10 @@ module StateMachineWorkflow
             end
             auto_invoke_command = name.to_s.index('rewind') == 0 ?  "invoke_previous" : "invoke_next"
             raise ::ActiveRecord::Rollback unless result && self.send(auto_invoke_command, *args)
+            if self.respond_to?(:histories)
+              self.histories ||= []
+              self.histories << History.new(:state => self.state)
+            end
             result
           end
         end

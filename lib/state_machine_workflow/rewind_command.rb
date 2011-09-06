@@ -23,14 +23,11 @@ module StateMachineWorkflow
       end
     end
 
-    def parse_options name, *options
+    def parse_options(name, options = {})
       klass_name = name.to_s.gsub("invoke_", "").gsub("record_", "").gsub("rewind_", "")
       command_name = "rewind_#{name}"
-      opts = {:class => klass_name.to_sym, :command_name => command_name}
-      if !options[0].nil? && options[0][0].class == Hash
-        opts = opts.merge(options[0][0])
-      end
-      return opts
+      defaults = {:class => klass_name.to_sym, :command_name => command_name}
+      return defaults.merge(options)
     end
   end
 end

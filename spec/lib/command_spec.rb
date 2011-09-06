@@ -357,7 +357,7 @@ describe StateMachineWorkflow::Command do
     end
     context "when the option contains a class" do
       it "should pass back a hash with the correct class name provided" do
-        TestClass.new.parse_options("record_my_same_command", [{:class => :command}]).should eql({:class => :command, :command_name => "record_my_same_command"})
+        TestClass.new.parse_options("record_my_same_command", :class => :command).should eql({:class => :command, :command_name => "record_my_same_command"})
       end
     end
   end

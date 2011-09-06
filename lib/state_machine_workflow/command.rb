@@ -1,14 +1,14 @@
 module StateMachineWorkflow
   module Command
 
-    def command(name, *options, &block)
+    def command(name, options = {}, &block)
       opts = parse_options(name, options)
       event(name, &block)
       if name.to_s.start_with?("record")
         update_name = create_update_event(name, &block)
       end
       if name.to_s.start_with?("record") || name.to_s.start_with?("invoke")
-        add_association_to_class(owner_class, opts[:class])
+        add_association_to_class(owner_class, opts[:class], opts[:parent_name])
       end
 
       owner_class.instance_eval do
@@ -81,17 +81,14 @@ module StateMachineWorkflow
       end
     end
 
-    def auto_command(name, *options, &block)
-      command(name, *options, &block)
+    def auto_command(name, options = {}, &block)
+      command(name, options, &block)
     end
 
-    def parse_options name, *options
+    def parse_options(name, options = {})
       klass_name = name.to_s.gsub("invoke_", "").gsub("record_", "").gsub("rewind_", "")
-      opts = {:class => klass_name.to_sym, :command_name => name}
-      if !options[0].nil? && options[0][0].class == Hash
-        opts = opts.merge(options[0][0])
-      end
-      return opts
+      defaults = {:class => klass_name.to_sym, :command_name => name}
+      return defaults.merge(options)
     end
 
     private
@@ -102,10 +99,10 @@ module StateMachineWorkflow
       update_name
     end
 
-    def add_association_to_class(owner_class, name)
+    def add_association_to_class(owner_class, name, parent_name = :station)
       if owner_class.respond_to?(:reflect_on_association) && owner_class.reflect_on_association(name).nil?
         owner_class.class_eval do
-          has_one name, :as => :station if self.respond_to?(:has_one)
+          has_one name, :as => parent_name if self.respond_to?(:has_one)
           validates_associated name if self.respond_to?(:validates_associated)
         end
       end

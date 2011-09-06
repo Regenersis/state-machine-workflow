@@ -87,7 +87,7 @@ module StateMachineWorkflow
 
     def parse_options(name, options = {})
       klass_name = name.to_s.gsub("invoke_", "").gsub("record_", "").gsub("rewind_", "")
-      defaults = {:class => klass_name.to_sym, :command_name => name}
+      defaults = {:class => klass_name.to_sym, :command_name => name, :parent_name => :station}
       return defaults.merge(options)
     end
 
@@ -99,7 +99,7 @@ module StateMachineWorkflow
       update_name
     end
 
-    def add_association_to_class(owner_class, name, parent_name = :station)
+    def add_association_to_class(owner_class, name, parent_name)
       if owner_class.respond_to?(:reflect_on_association) && owner_class.reflect_on_association(name).nil?
         owner_class.class_eval do
           has_one name, :as => parent_name if self.respond_to?(:has_one)

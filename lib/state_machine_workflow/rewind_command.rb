@@ -1,7 +1,7 @@
 module StateMachineWorkflow
   module RewindCommand
     def rewind_command(name, *options, &block)
-      opts = parse_options(name, *options)
+      opts = parse_rewind_options(name, *options)
       owner_class.instance_eval do |*args|
         define_method opts[:command_name] do |*args|
           current_state = self.histories.pop
@@ -23,7 +23,7 @@ module StateMachineWorkflow
       end
     end
 
-    def parse_options(name, options = {})
+    def parse_rewind_options(name, options={})
       klass_name = name.to_s.gsub("invoke_", "").gsub("record_", "").gsub("rewind_", "")
       command_name = "rewind_#{name}"
       defaults = {:class => klass_name.to_sym, :command_name => command_name}

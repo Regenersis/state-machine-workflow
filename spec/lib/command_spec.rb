@@ -5,7 +5,7 @@ class CommandExtension
   def self.transaction
     yield
   end
-  
+
   state_machine :state, :initial => :init do
     command :command do
       transition :init => :completed

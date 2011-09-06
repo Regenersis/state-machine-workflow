@@ -1,7 +1,7 @@
 module StateMachineWorkflow
   module Command
 
-    def command(name, options = {}, &block)
+    def command(name, options={}, &block)
       opts = parse_options(name, options)
       event(name, &block)
       if name.to_s.start_with?("record")
@@ -85,7 +85,7 @@ module StateMachineWorkflow
       command(name, options, &block)
     end
 
-    def parse_options(name, options = {})
+    def parse_options(name, options={})
       klass_name = name.to_s.gsub("invoke_", "").gsub("record_", "").gsub("rewind_", "")
       defaults = {:class => klass_name.to_sym, :command_name => name, :parent_name => :station}
       return defaults.merge(options)

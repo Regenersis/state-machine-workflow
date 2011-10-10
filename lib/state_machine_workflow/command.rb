@@ -18,14 +18,16 @@ module StateMachineWorkflow
               result = self.send('execute_' + name.to_s, *args) && super()
             else
               klass_name = opts[:class]
-              if args[0].class == Hash
+              build_result = true
+              if args[0].class == Hash || args.empty?
                 klass = Object.const_get(klass_name.to_s.classify)
                 instance = klass.new(*args)
-                instance.build(*args) if instance.respond_to?(:build)
+                build_result = instance.build(self, *args) if instance.respond_to?(:build)
               else
                 instance = args[0]
+                build_result = instance.build(self, *args) if instance.respond_to?(:build)
               end
-              result = self.send("#{klass_name}=", instance) && super()
+              result = self.send("#{klass_name}=", instance) && super() && build_result
             end
             auto_invoke_command = name.to_s.index('rewind') == 0 ?  "invoke_previous" : "invoke_next"
             raise ::ActiveRecord::Rollback unless result && self.send(auto_invoke_command, *args)

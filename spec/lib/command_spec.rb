@@ -159,7 +159,7 @@ describe StateMachineWorkflow::Command do
 
     class Bar
       attr_accessor :result, :update_result, :deleted
-      def build params
+      def build owner, params
         @result = params
       end
 
@@ -175,6 +175,12 @@ describe StateMachineWorkflow::Command do
     end
 
     class Quux
+      attr_accessor :owner
+
+      def build(owner, *args)
+        @owner = owner
+        false
+      end
     end
 
     class AssociationTest
@@ -316,11 +322,29 @@ describe StateMachineWorkflow::Command do
     end
 
     context "when using an auto command the command" do
-      it "activate the update method if one exists on the instance" do
+      before do
         @params = {:bar => "quux", :qux => "corge"}
         @association_test.state = "qux"
+        lambda{
         @association_test.record_qux(@params)
-        @association_test.state.should eql "corge"
+        }.should raise_error(ActiveRecord::Rollback)
+      end
+      it "should pass the owner class into the build command" do
+        @association_test.quux.owner.should eql @association_test
+      end
+    end
+
+    context "when invoke command is called directly" do
+      before do
+        @params = {:bar => "quux", :qux => "corge"}
+        @association_test.state = "quux"
+        lambda{
+        @association_test.invoke_quux
+        }.should raise_error(ActiveRecord::Rollback)
+      end
+
+      it "should pass the owner class into the build command" do
+        @association_test.quux.owner.should eql @association_test
       end
     end
 

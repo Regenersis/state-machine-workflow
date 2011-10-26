@@ -1,6 +1,12 @@
 require 'spec_helper'
 
 describe StateMachineWorkflow::RewindCommand do
+  class Hazar
+    attr_accessor :deleted
+    def delete
+      @deleted = true
+    end
+  end
 
   class Xyzzy
 
@@ -65,13 +71,7 @@ describe StateMachineWorkflow::RewindCommand do
       end
     end
   end
-  class Hazar
-    attr_accessor :deleted
-    def delete
-      @deleted = true
-    end
-  end
-  
+
   class Qux
     attr_accessor :deleted
     def delete
@@ -127,5 +127,4 @@ describe StateMachineWorkflow::RewindCommand do
       foo.hazar.deleted.should be_true
     end
   end
-
 end

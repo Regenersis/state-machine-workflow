@@ -155,6 +155,12 @@ describe StateMachineWorkflow::Command do
         self.qux = params[:qux]
         true
       end
+
+      module OwnerMethods
+        def hello_world
+          "hello world"
+        end
+      end
     end
 
     class Bar
@@ -240,6 +246,10 @@ describe StateMachineWorkflow::Command do
         command :invoke_quux do
           transition :quux => :corge
         end
+
+        command :record_corge do
+          transition :corge => :garply
+        end
         command :record_alias_command, :class => :qux do
           transition :alias_command => :zxzzy
         end
@@ -256,12 +266,24 @@ describe StateMachineWorkflow::Command do
       @association_test.should respond_to :foo
     end
 
+    it "should include a the owner methods module if one exists" do
+      AssociationTest.should include Foo::OwnerMethods
+    end
+
     it "should add all attributes" do
       AssociationTest.attributes.should eql [:foo, :bar, :qux, :quux]
     end
 
     it "should set the validates associated klass" do
       AssociationTest.validated_associated.should eql [:foo, :bar, :qux, :quux]
+    end
+
+    context "when no object exists that match command name" do
+      it "should transition to next state" do
+        @association_test.state = "corge"
+        @association_test.record_corge
+        @association_test.state.should eql "garply"
+      end
     end
 
     context "when transitioning state with new object" do
@@ -361,33 +383,49 @@ describe StateMachineWorkflow::Command do
   end
 
   context "parse options" do
+    before do
+      @options = {:class => :command, :command_name => "record_command", :parent_name => :station, :class_exists => false}
+    end
     context "when options are empty" do
-      class TestClass
+      class TestParseOption
         include StateMachineWorkflow::Command
       end
 
+
       it "should pass back a hash with the correct class name with record command" do
-        TestClass.new.parse_options("record_command").should eql({:class => :command, :command_name => "record_command", :parent_name => :station})
+        TestParseOption.new.parse_options("record_command").should eql(@options)
       end
       it "should pass back a hash with the correct class name with record invoke" do
-        TestClass.new.parse_options("invoke_command").should eql({:class => :command, :command_name => "invoke_command", :parent_name => :station})
+        @options[:command_name] = "invoke_command"
+        TestParseOption.new.parse_options("invoke_command").should eql(@options)
       end
       it "should pass back a hash with the correct class name with record rewind command" do
-        TestClass.new.parse_options("rewind_record_command").should eql({:class => :command, :command_name => "rewind_record_command", :parent_name => :station})
+        @options[:command_name] = "rewind_record_command"
+        TestParseOption.new.parse_options("rewind_record_command").should eql(@options)
       end
       it "should pass back a hash with the correct class name with invoke rewind command" do
-        TestClass.new.parse_options("rewind_invoke_command").should eql({:class => :command, :command_name => "rewind_invoke_command", :parent_name => :station})
+        @options[:command_name] = "rewind_invoke_command"
+        TestParseOption.new.parse_options("rewind_invoke_command").should eql(@options)
+      end
+      it "should set the class exists to true if the class is defined" do
+        @options[:class_exists] = true
+        @options[:class] = :test_parse_option
+        TestParseOption.new.parse_options("record_command", :class => :test_parse_option).should eql(@options)
       end
     end
     context "when the option contains a class" do
       it "should pass back a hash with the correct class name provided" do
-        TestClass.new.parse_options("record_my_same_command", :class => :command).should eql({:class => :command, :command_name => "record_my_same_command", :parent_name => :station})
+        @options[:command_name] = "record_my_same_command"
+        TestParseOption.new.parse_options("record_my_same_command", :class => :command).should eql(@options)
       end
     end
 
     context "when the option contains a parent_name" do
       it "should pass back a hash with the correct parent name" do
-        TestClass.new.parse_options("record_my_same_command", :parent_name => :claim).should eql({:class => :my_same_command, :command_name => "record_my_same_command", :parent_name => :claim})
+        @options[:class] = :my_same_command
+        @options[:command_name] = "record_my_same_command"
+        @options[:parent_name] = :claim
+        TestParseOption.new.parse_options("record_my_same_command", :parent_name => :claim).should eql(@options)
       end
     end
 

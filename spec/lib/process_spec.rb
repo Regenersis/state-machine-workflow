@@ -50,11 +50,6 @@ describe Process do
 
     context "defines method finish_book_in" do
 
-      it "call execute_finish_book_in passing all arguments" do
-        @machine.finish_book_in('arg1', 'arg2', 'arg3')
-        [@machine.a1, @machine.a2, @machine.a3].should eql ['arg1', 'arg2', 'arg3']
-      end
-
       it "change state to screening" do
         @machine.finish_book_in('arg1', 'arg2', 'arg3')
         @machine.state.should eql 'screening'
@@ -74,10 +69,6 @@ describe Process do
         }.should raise_error(ActiveRecord::Rollback)
       end
 
-      it "calls start_screening passing reference" do
-        @machine.finish_book_in('arg1', 'arg2', 'arg3')
-        @machine.workitem.should eql @machine
-      end
 
       it "return true if start_screening returns true" do
         @machine.finish_book_in('arg1', 'arg2', 'arg3').should be_true
@@ -160,7 +151,7 @@ describe Process do
         it "should create new object and assign to parent" do
           @foo.garply.should_not be_nil
         end
-        it "should creat type based on state" do
+        it "should create type based on state" do
           @foo.garply.class.should eql Garply
         end
       end

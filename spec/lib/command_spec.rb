@@ -57,9 +57,9 @@ describe StateMachineWorkflow::Command do
       @machine.execute_command_return_value = true
     end
 
- #   should_have_event(:command)
- #   should_have_event(:record_action)
- #   should_have_event(:update_action)
+    #   should_have_event(:command)
+    #   should_have_event(:record_action)
+    #   should_have_event(:update_action)
 
     context "defines method command which" do
 
@@ -129,14 +129,14 @@ describe StateMachineWorkflow::Command do
       it "raise ActiveRecord::Rollback and returns false if execute_command returns false" do
         @machine.execute_command_return_value = false
         lambda {
-            result = @machine.update_action('arg1', 'arg2', 'arg3')
+          result = @machine.update_action('arg1', 'arg2', 'arg3')
         }.should raise_error(ActiveRecord::Rollback)
       end
 
       it "raise ActiveRecord::Rollback and returns false if state transition fails" do
         @machine.state = "completed"
         lambda {
-            result = @machine.update_action('arg1', 'arg2', 'arg3')
+          result = @machine.update_action('arg1', 'arg2', 'arg3')
         }.should raise_error(ActiveRecord::Rollback)
       end
     end
@@ -326,7 +326,7 @@ describe StateMachineWorkflow::Command do
         @params = {:bar => "quux", :qux => "corge"}
         @association_test.state = "qux"
         lambda{
-        @association_test.record_qux(@params)
+          @association_test.record_qux(@params)
         }.should raise_error(ActiveRecord::Rollback)
       end
       it "should pass the owner class into the build command" do
@@ -339,7 +339,7 @@ describe StateMachineWorkflow::Command do
         @params = {:bar => "quux", :qux => "corge"}
         @association_test.state = "quux"
         lambda{
-        @association_test.invoke_quux
+          @association_test.invoke_quux
         }.should raise_error(ActiveRecord::Rollback)
       end
 

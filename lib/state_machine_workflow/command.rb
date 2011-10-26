@@ -15,7 +15,6 @@ module StateMachineWorkflow
         define_method name do |*args|
           self.class.transaction do
             if self.respond_to?('execute_' + name.to_s)
-              puts args.inspect
               result = self.send('execute_' + name.to_s, *args) && super()
             else
               klass_name = opts[:class]

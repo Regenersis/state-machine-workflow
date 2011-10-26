@@ -64,7 +64,7 @@ module StateMachineWorkflow
 
         define_method "invoke_next" do |*args|
           if(self.respond_to?("invoke_" + self.state.to_s))
-            result = self.send("invoke_" + self.state.to_s, *args)
+            result = self.send("invoke_" + self.state.to_s, {})
             return result
           end
           true
@@ -72,7 +72,7 @@ module StateMachineWorkflow
 
         define_method "invoke_previous" do |*args|
           if(self.respond_to?("rewind_invoke_" + self.state.to_s))
-            return self.send("rewind_invoke_" + self.state.to_s, *args)
+            return self.send("rewind_invoke_" + self.state.to_s, {})
           end
           true
         end

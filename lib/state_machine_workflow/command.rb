@@ -15,6 +15,7 @@ module StateMachineWorkflow
         define_method name do |*args|
           self.class.transaction do
             if self.respond_to?('execute_' + name.to_s)
+              puts args.inspect
               result = self.send('execute_' + name.to_s, *args) && super()
             else
               klass_name = opts[:class]
@@ -64,7 +65,7 @@ module StateMachineWorkflow
 
         define_method "invoke_next" do |*args|
           if(self.respond_to?("invoke_" + self.state.to_s))
-            result = self.send("invoke_" + self.state.to_s, {})
+            result = self.send("invoke_" + self.state.to_s)
             return result
           end
           true
@@ -72,7 +73,7 @@ module StateMachineWorkflow
 
         define_method "invoke_previous" do |*args|
           if(self.respond_to?("rewind_invoke_" + self.state.to_s))
-            return self.send("rewind_invoke_" + self.state.to_s, {})
+            return self.send("rewind_invoke_" + self.state.to_s)
           end
           true
         end

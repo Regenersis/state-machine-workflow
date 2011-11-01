@@ -1,5 +1,9 @@
 require 'spec_helper'
 
+class Action
+end
+class PreComplete
+end
 class CommandExtension
 
   def self.transaction
@@ -247,7 +251,7 @@ describe StateMachineWorkflow::Command do
           transition :quux => :corge
         end
 
-        command :record_corge do
+        event :record_corge do
           transition :corge => :garply
         end
         command :record_alias_command, :class => :qux do
@@ -384,7 +388,7 @@ describe StateMachineWorkflow::Command do
 
   context "parse options" do
     before do
-      @options = {:class => :command, :command_name => "record_command", :parent_name => :station, :class_exists => false}
+      @options = {:class => :command, :command_name => "record_command", :parent_name => :station}
     end
     context "when options are empty" do
       class TestParseOption
@@ -406,11 +410,6 @@ describe StateMachineWorkflow::Command do
       it "should pass back a hash with the correct class name with invoke rewind command" do
         @options[:command_name] = "rewind_invoke_command"
         TestParseOption.new.parse_options("rewind_invoke_command").should eql(@options)
-      end
-      it "should set the class exists to true if the class is defined" do
-        @options[:class_exists] = true
-        @options[:class] = :test_parse_option
-        TestParseOption.new.parse_options("record_command", :class => :test_parse_option).should eql(@options)
       end
     end
     context "when the option contains a class" do

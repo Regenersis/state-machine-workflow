@@ -7,12 +7,10 @@ module StateMachineWorkflow
       if name.to_s.start_with?("record")
         update_name = create_update_event(name, &block)
       end
-      if opts[:class_exists] #if the class does not exists dont add association
         if name.to_s.start_with?("record") || name.to_s.start_with?("invoke")
           add_association_to_class(owner_class, opts[:class], opts[:parent_name])
           include_owner_methods(owner_class, opts[:class])
         end
-      end
 
 
       owner_class.instance_eval do
@@ -20,8 +18,6 @@ module StateMachineWorkflow
           self.class.transaction do
             if self.respond_to?('execute_' + name.to_s) #backwords compatability with old version of extensions
               result = self.send('execute_' + name.to_s, *args) && super()
-            elsif !opts[:class_exists] #run the transition if there is no task for command
-              result = super()
             else
               klass_name = opts[:class]
               build_result = true
@@ -50,8 +46,6 @@ module StateMachineWorkflow
             self.class.transaction do
               if self.respond_to?('execute_' + update_name.to_s)
                 result = self.send('execute_' + update_name.to_s, *args) && super()
-              elsif !opts[:class_exists]
-                result = super()
               else
                 if args[0].class == Hash
                   klass_name = opts[:class]
@@ -99,7 +93,6 @@ module StateMachineWorkflow
       klass_name = name.to_s.gsub("invoke_", "").gsub("record_", "").gsub("rewind_", "")
       defaults = {:class => klass_name.to_sym, :command_name => name, :parent_name => :station}
       defaults.merge!(options)
-      defaults[:class_exists] = Object.const_defined?(defaults[:class].to_s.classify)
       return defaults
     end
 

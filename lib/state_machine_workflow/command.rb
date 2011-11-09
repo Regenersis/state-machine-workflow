@@ -7,10 +7,10 @@ module StateMachineWorkflow
       if name.to_s.start_with?("record")
         update_name = create_update_event(name, &block)
       end
-        if name.to_s.start_with?("record") || name.to_s.start_with?("invoke")
-          add_association_to_class(owner_class, opts[:class], opts[:parent_name])
-          include_owner_methods(owner_class, opts[:class])
-        end
+      if name.to_s.start_with?("record") || name.to_s.start_with?("invoke")
+        add_association_to_class(owner_class, opts[:class], opts[:parent_name])
+        include_owner_methods(owner_class, opts[:class])
+      end
 
 
       owner_class.instance_eval do
@@ -29,7 +29,7 @@ module StateMachineWorkflow
                 instance = args[0]
                 build_result = instance.build(self, *args) if instance.respond_to?(:build)
               end
-              result = self.send("#{klass_name}=", instance) && build_result && super()
+              result = build_result && self.send("#{klass_name}=", instance) &&  super()
             end
             auto_invoke_command = name.to_s.index('rewind') == 0 ?  "invoke_previous" : "invoke_next"
             raise ::ActiveRecord::Rollback unless result && self.send(auto_invoke_command, *args)

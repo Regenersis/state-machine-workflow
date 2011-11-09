@@ -347,33 +347,6 @@ describe StateMachineWorkflow::Command do
       end
     end
 
-    context "when using an auto command the command" do
-      before do
-        @params = {:bar => "quux", :qux => "corge"}
-        @association_test.state = "qux"
-        lambda{
-          @association_test.record_qux(@params)
-        }.should raise_error(ActiveRecord::Rollback)
-      end
-      it "should pass the owner class into the build command" do
-        @association_test.quux.owner.should eql @association_test
-      end
-    end
-
-    context "when invoke command is called directly" do
-      before do
-        @params = {:bar => "quux", :qux => "corge"}
-        @association_test.state = "quux"
-        lambda{
-          @association_test.invoke_quux
-        }.should raise_error(ActiveRecord::Rollback)
-      end
-
-      it "should pass the owner class into the build command" do
-        @association_test.quux.owner.should eql @association_test
-      end
-    end
-
     context "when executing an alias command" do
       it "should set the alias class" do
         @params = {:bar => "quux", :qux => "corge"}

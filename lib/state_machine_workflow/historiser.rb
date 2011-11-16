@@ -1,7 +1,6 @@
 module StateMachineWorkflow
   module Historiser
     def self.included(klass)
-      puts "calling included"
       klass.has_many :histories, :as => :station
     end
 

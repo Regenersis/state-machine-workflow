@@ -8,10 +8,9 @@ module StateMachineWorkflow
         update_name = create_update_event(name, &block)
       end
       if name.to_s.start_with?("record") || name.to_s.start_with?("invoke")
-        add_association_to_class(owner_class, opts[:class], opts[:parent_name])
+        add_association_to_class(owner_class, opts )
         include_owner_methods(owner_class, opts[:class])
       end
-
 
       owner_class.instance_eval do
         define_method name do |*args|
@@ -29,7 +28,7 @@ module StateMachineWorkflow
                 instance = args[0]
                 build_result = instance.build(self, *args) if instance.respond_to?(:build)
               end
-              result = build_result && self.send("#{klass_name}=", instance) &&  super()
+              result = build_result && self.send("#{opts[:as]}=", instance) &&  super()
             end
             auto_invoke_command = name.to_s.index('rewind') == 0 ?  "invoke_previous" : "invoke_next"
             raise ::ActiveRecord::Rollback unless result && self.send(auto_invoke_command, *args)
@@ -93,6 +92,9 @@ module StateMachineWorkflow
       klass_name = name.to_s.gsub("invoke_", "").gsub("record_", "").gsub("rewind_", "")
       defaults = {:class => klass_name.to_sym, :command_name => name, :parent_name => :station}
       defaults.merge!(options)
+      unless defaults.include? :as
+        defaults[:as] = defaults[:class]
+      end
       return defaults
     end
 
@@ -104,11 +106,13 @@ module StateMachineWorkflow
       update_name
     end
 
-    def add_association_to_class(owner_class, name, parent_name)
+    def add_association_to_class(owner_class, opts)
+      name = opts[:class]
+      parent_name = opts[:parent_name]
       if owner_class.respond_to?(:reflect_on_association) && owner_class.reflect_on_association(name).nil?
         owner_class.class_eval do
-          has_one name, :as => parent_name if self.respond_to?(:has_one)
-          validates_associated name if self.respond_to?(:validates_associated)
+          has_one opts[:as], :class_name => name.to_s.classify, :as => parent_name if self.respond_to?(:has_one)
+          validates_associated opts[:as] if self.respond_to?(:validates_associated)
         end
       end
     end

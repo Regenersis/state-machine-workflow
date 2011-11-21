@@ -1,12 +1,6 @@
 require 'spec_helper'
 
 describe StateMachineWorkflow::RewindCommand do
-  class Hazar
-    attr_accessor :deleted
-    def delete
-      @deleted = true
-    end
-  end
 
   class Xyzzy
 
@@ -72,22 +66,6 @@ describe StateMachineWorkflow::RewindCommand do
     end
   end
 
-  class Qux
-    attr_accessor :deleted
-    def delete
-      @deleted = true
-    end
-  end
-
-  class HistoryStub
-    attr_accessor :state
-    def initialize state_hash
-      @state = state_hash[:state]
-    end
-
-    def delete
-    end
-  end
 
   context "when rewinding a class" do
     it "should create a rewind method for each command" do

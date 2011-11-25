@@ -28,7 +28,7 @@ module StateMachineWorkflow
                 instance = args[0]
                 build_result = instance.build(self, *args) if instance.respond_to?(:build)
               end
-              result = build_result && self.send("#{opts[:as]}=", instance) &&  super()
+              result = build_result && self.send("#{opts[:as]}=", instance) && super()
             end
             auto_invoke_command = name.to_s.index('rewind') == 0 ?  "invoke_previous" : "invoke_next"
             raise ::ActiveRecord::Rollback unless result && self.send(auto_invoke_command, *args)

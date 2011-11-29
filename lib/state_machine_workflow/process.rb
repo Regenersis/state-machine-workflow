@@ -45,7 +45,7 @@ module StateMachineWorkflow
             end
             self.send("#{self.state.to_s}=", instance)
           end
-          self.publish_event(command_name, self.send("#{process_name}_job")) if self.respond_to?("#{process_name}_job")
+          self.publish_event(command_name) if self.respond_to? :publish_event
           true
         end
       end

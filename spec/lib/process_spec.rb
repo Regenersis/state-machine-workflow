@@ -2,7 +2,8 @@ require 'spec_helper'
 
 class ProcessExtension
 
-  def publish_event(command, context, *args)
+  def publish_event(command)
+    self.last_event = command
   end
 
   def self.transaction
@@ -19,7 +20,7 @@ class ProcessExtension
     end
   end
 
-  attr_accessor :workitem, :book_in_job
+  attr_accessor :workitem, :book_in_job, :last_event
   attr_accessor :a1, :a2, :a3, :execute_finish_book_in_return_value, :start_screening_return_value, :execute_finish_screening_return_value
 
   def execute_finish_book_in(arg1, arg2, arg3)
@@ -55,6 +56,11 @@ describe Process do
         @machine.state.should eql 'screening'
       end
 
+      it "publishes event" do
+        @machine.finish_book_in('arg1', 'arg2', 'arg3')
+        @machine.last_event.should == :finish_book_in
+      end
+
       it "raise ActiveRecord::Rollback and returns false if execute_finish_book_in returns false" do
         @machine.execute_finish_book_in_return_value = false
         lambda {
@@ -68,7 +74,6 @@ describe Process do
           result = @machine.finish_book_in('arg1', 'arg2', 'arg3')
         }.should raise_error(ActiveRecord::Rollback)
       end
-
 
       it "return true if start_screening returns true" do
         @machine.finish_book_in('arg1', 'arg2', 'arg3').should be_true
@@ -134,6 +139,10 @@ describe Process do
         end
         process :waldo do
         end
+      end
+
+      def publish_event(event_name)
+
       end
 
     end

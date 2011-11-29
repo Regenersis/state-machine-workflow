@@ -20,12 +20,12 @@ module StateMachineWorkflow
             else
               klass_name = opts[:class]
               build_result = true
-              if args[0].class == Hash || args.empty?
-                klass = Object.const_get(klass_name.to_s.classify)
-                instance = klass.new(*args)
+              if args[0].class.name == opts[:class].to_s.classify
+                instance = args.shift
                 build_result = instance.build(self, *args) if instance.respond_to?(:build)
               else
-                instance = args[0]
+                klass = Object.const_get(klass_name.to_s.classify)
+                instance = klass.new(args.shift)
                 build_result = instance.build(self, *args) if instance.respond_to?(:build)
               end
               result = build_result && self.send("#{opts[:as]}=", instance) && super()

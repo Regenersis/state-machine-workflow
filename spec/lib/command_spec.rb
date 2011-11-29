@@ -276,8 +276,8 @@ describe StateMachineWorkflow::Command do
 
       it "activate the build method if one exists on the instance" do
         @association_test.state = "bar"
-        @association_test.record_bar(@params)
-        @association_test.bar.result.should eql @params
+        @association_test.record_bar({}, @params)
+        @association_test.bar.result.should eql [@params]
       end
 
       it "should record its history" do

@@ -24,7 +24,7 @@ end
 
 class Bar
   attr_accessor :result, :update_result, :deleted
-  def build owner, params
+  def build owner, *params
     @result = params
   end
 

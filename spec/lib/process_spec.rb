@@ -117,8 +117,23 @@ describe Process do
       end
     end
 
+    class Fred
+      attr_accessor :line
+    end
+
     class Corge
       def self.has_one klass_name, params={}
+        self.instance_eval do
+          define_method klass_name do |*args|
+            self.instance_variable_get(:"@#{klass_name}")
+          end
+          define_method "#{klass_name}=" do |*args|
+            self.instance_variable_set(:"@#{klass_name}", *args)
+          end
+        end
+      end
+
+      def self.has_many klass_name, params={}
         self.instance_eval do
           define_method klass_name do |*args|
             self.instance_variable_get(:"@#{klass_name}")
@@ -137,12 +152,17 @@ describe Process do
         process :garply do
           followed_by :waldo
         end
+
         process :waldo do
+          followed_by :fred
+        end
+
+        process :fred, :relationship => :has_many do
+          followed_by :fred
         end
       end
 
       def publish_event(event_name)
-
       end
 
     end
@@ -150,6 +170,11 @@ describe Process do
     it "should add a method for bar" do
       foo = Corge.new
       foo.should respond_to :grault
+    end
+    context "when defining a process" do
+      it "should include the process helpers to the instance" do
+        Corge.included_modules.should include StateMachineWorkflow::ProcessHelpers
+      end
     end
     context "when transitioning to next state" do
       context "with not start command defined" do
@@ -188,6 +213,41 @@ describe Process do
           @foo.garply.line.should eql @foo
         end
       end
+    end
+
+    context "when relationship is defined for transition" do
+      before do
+        @foo = Corge.new
+        @foo.state = "fred"
+      end
+
+      it "should define add a has many reletionship" do
+        @foo.should respond_to :freds
+      end
+
+      it "should create a method to return the last object in the array" do
+        fred_west = "wrong"
+        fred_bundy = "wrong"
+        fred_jones = "right"
+        @foo.freds = [fred_west, fred_bundy, fred_jones]
+        @foo.fred.should eql fred_jones
+      end
+
+      it "should add a new instance to the collection when starting the transition" do
+        @foo.state = "waldo"
+        @foo.freds = []
+        @foo.finish_waldo
+        @foo.freds.length.should eql 1
+      end
+
+      it "should add if transitions back to itself" do
+        @foo.state = "fred"
+        @foo.freds = []
+        @foo.finish_fred
+        @foo.finish_fred
+        @foo.freds.length.should eql 2
+      end
+
     end
   end
 end

@@ -20,7 +20,7 @@ module StateMachineWorkflow
             else
               klass_name = opts[:class]
               build_result = true
-              if args[0].class.name == opts[:class].to_s.classify
+              if args[0].class.name == klass_name.to_s.classify
                 instance = args.shift
                 build_result = instance.build(self, *args) if instance.respond_to?(:build)
               else
@@ -49,8 +49,9 @@ module StateMachineWorkflow
                 if args[0].class == Hash
                   klass_name = opts[:class]
                   property = self.send("#{klass_name}")
+                  args.shift
                   if property.respond_to?(:update)
-                    result = property.update(*args) && super()
+                    result = property.update(self, *args) && super()
                   else
                     result = property.update_attributes(*args) && super()
                   end
@@ -58,6 +59,10 @@ module StateMachineWorkflow
               end
               auto_invoke_command = update_name.to_s.index('rewind') == 0 ?  "invoke_previous" : "invoke_next"
               raise ::ActiveRecord::Rollback unless result && self.send(auto_invoke_command, *args)
+              if self.respond_to?(:histories)
+                self.histories ||= []
+                History.create(:state => self.state, :station => self)
+              end
               result
             end
           end

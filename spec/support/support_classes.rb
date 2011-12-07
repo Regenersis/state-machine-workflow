@@ -28,9 +28,10 @@ class Bar
     @result = params
   end
 
-  def update params
+  def update owner, *params
     @update_result = params
   end
+
   def delete
     @deleted = true
   end

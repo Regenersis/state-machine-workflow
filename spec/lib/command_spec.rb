@@ -295,13 +295,13 @@ describe StateMachineWorkflow::Command do
 
       it "should set the association value when transitioning" do
         @association_test.foo = Foo.new(@params)
-        @association_test.update_foo(@update_params)
+        @association_test.update_foo({}, @update_params)
         @association_test.state.should eql "bar"
       end
 
       it "should create a new object to param is hash" do
         @association_test.foo = Foo.new(@params)
-        @association_test.update_foo(@update_params)
+        @association_test.update_foo({}, @update_params)
         @association_test.foo.bar.should eql @update_params[:bar]
         @association_test.foo.qux.should eql @update_params[:qux]
       end
@@ -309,8 +309,14 @@ describe StateMachineWorkflow::Command do
       it "activate the update method if one exists on the instance" do
         @association_test.bar = Bar.new(@params)
         @association_test.state = "bar"
-        @association_test.update_bar(@update_params)
-        @association_test.bar.update_result.should eql @update_params
+        @association_test.update_bar({}, @update_params)
+        @association_test.bar.update_result.should eql [@update_params]
+      end
+
+      it "should record its history" do
+        @association_test.foo = Foo.new(@params)
+        @association_test.update_foo({}, @update_params)
+        @history.should eql ["bar"]
       end
     end
 

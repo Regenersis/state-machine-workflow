@@ -228,9 +228,9 @@ describe Process do
       it "should create a method to return the last object in the array" do
         fred_west = "wrong"
         fred_bundy = "wrong"
-        fred_jones = "right"
-        @foo.freds = [fred_west, fred_bundy, fred_jones]
-        @foo.fred.should eql fred_jones
+        fred_flintstone = "right"
+        @foo.freds = [fred_west, fred_bundy, fred_flintstone]
+        @foo.fred.should eql fred_flintstone
       end
 
       it "should add a new instance to the collection when starting the transition" do

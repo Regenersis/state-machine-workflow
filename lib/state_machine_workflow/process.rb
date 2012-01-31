@@ -15,6 +15,9 @@ module StateMachineWorkflow
           end
           self.finish_process
           raise ::ActiveRecord::Rollback unless super()
+          if self.respond_to?("invoke_" + self.state.to_s)
+            self.send("invoke_" + self.state.to_s)
+          end
           self.start_next_process
           self.publish_event(command_name) if self.respond_to? :publish_event
           true

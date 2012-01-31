@@ -87,6 +87,13 @@ module StateMachineWorkflow
       if name.to_s.start_with?("record") || name.to_s.start_with?("invoke")
         rewind_command(name, options)
       end
+
+      if self.respond_to?("finish_" + self.state)
+        klass = Object.const_get(self.state.to_s.classify)
+        instance = klass.new
+        instance.start(self) if instance.respond_to?(:start)
+        self.send("#{self.state.to_s}=", instance)
+      end
     end
 
     def auto_command(name, options = {}, &block)

@@ -88,7 +88,7 @@ module StateMachineWorkflow
         rewind_command(name, options)
       end
 
-      if self.respond_to?("finish_" + self.state)
+      if self.respond_to?("finish_" + self.state) && self.state.nil?
         klass = Object.const_get(self.state.to_s.classify)
         instance = klass.new
         instance.start(self) if instance.respond_to?(:start)

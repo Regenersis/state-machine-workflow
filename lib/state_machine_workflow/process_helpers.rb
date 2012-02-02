@@ -17,7 +17,7 @@ module StateMachineWorkflow
         instance = setup_instance
         collection = self.send("#{self.state.to_s.pluralize}")
         collection << instance
-      elsif self.respond_to?(self.state) && self.state.nil?
+      elsif self.respond_to?(self.state)
         instance = setup_instance
         self.send("#{self.state.to_s}=", instance)
       end

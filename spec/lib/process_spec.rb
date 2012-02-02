@@ -18,6 +18,14 @@ class ProcessExtension
     process :screening do
       followed_by :dispatch
     end
+
+    process :dispatch do
+      followed_by :task
+    end
+
+    event :invoke_task do
+      transition :task => :complete
+    end
   end
 
   attr_accessor :workitem, :book_in_job, :last_event
@@ -96,6 +104,15 @@ describe Process do
         machine.workitem.should be_nil
         result.should be_true
       end
+    end
+
+    context "finish_dispatch" do
+      it "should automatically carry out next event if invoke" do
+        @machine.state = "dispatch"
+        @machine.finish_dispatch
+        @machine.state.should eql "complete"
+      end
+
     end
   end
 

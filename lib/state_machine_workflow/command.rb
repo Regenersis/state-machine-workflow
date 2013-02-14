@@ -30,7 +30,7 @@ module StateMachineWorkflow
               end
               begin
                 result = build_result && self.send("#{opts[:as]}=", instance) && super()
-              rescue ActiveRecord::RecordNotFound
+              rescue ActiveRecord::RecordNotSaved
                 result = false
               end
             end

@@ -5,8 +5,8 @@ require "state_machine_workflow/version"
 Gem::Specification.new do |s|
   s.name        = "state_machine_workflow"
   s.version     = StateMachineWorkflow::VERSION
-  s.authors     = ["Colin Gemmell"]
-  s.email       = ["pythonandchips@gmail.com"]
+  s.authors     = ["VN2 Developers"]
+  s.email       = ["vn2developers@regenersis.com"]
   s.homepage    = ""
   s.summary     = %q{Workflow extensions for the state machine gem}
   s.description = %q{Workflow extensions for the state machine gem}

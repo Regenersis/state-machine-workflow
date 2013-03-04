@@ -25,7 +25,11 @@ module StateMachineWorkflow
                 build_result = instance.build(self, *args) if instance.respond_to?(:build)
               else
                 klass = Object.const_get(klass_name.to_s.classify)
-                instance = klass.new(args.shift)
+                if args.first.is_a?(Hash)
+                  instance = klass.new(args.shift)
+                else
+                  instance = klass.new
+                end
                 build_result = instance.build(self, *args) if instance.respond_to?(:build)
               end
               begin

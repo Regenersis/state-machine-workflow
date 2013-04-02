@@ -42,11 +42,9 @@ module StateMachineWorkflow
         if options[:relationship] == :has_one
           has_one process_name, :as => options[:parent_name] if self.respond_to?(:has_one)
         elsif options[:relationship] == :has_many
-          has_many process_name.to_s.pluralize, :as => options[:parent_name] if self.respond_to?(:has_many)
-          owner_class.instance_eval do
-            define_method process_name do
-              self.send(process_name.to_s.pluralize).last
-            end
+          has_many process_name.to_s.pluralize.to_sym, :as => options[:parent_name] if self.respond_to?(:has_many)
+          define_method process_name do
+            self.send(process_name.to_s.pluralize).last
           end
         end
       end

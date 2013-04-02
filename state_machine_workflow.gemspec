@@ -21,5 +21,5 @@ Gem::Specification.new do |s|
   s.add_development_dependency "rake"
   s.add_development_dependency "rspec"
   s.add_runtime_dependency "state_machine", "1.2.0"
-  s.add_runtime_dependency "activerecord", "~>3.1.11"
+  s.add_runtime_dependency "activerecord", "~>3.2.13"
 end
